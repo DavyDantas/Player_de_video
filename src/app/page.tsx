@@ -1,5 +1,6 @@
 "use client"
 import ProgressBar from "./components/progressBar";
+import PlayPause from "@/app/components/playPause"
 
 import { useRef, useState } from "react";
 
@@ -7,14 +8,17 @@ export default function Home() {
   const [progressVideo, setProgress] = useState<number>(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [widthVideo, setWidthVideo] = useState(50)
+  const [playedVideo, setPlayedVideo] = useState(false)
 
   const handlePause = () => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
       video.play();
+      setPlayedVideo(true)
     } else {
       video.pause();
+      setPlayedVideo(false)
     }
   };
 
@@ -46,6 +50,7 @@ export default function Home() {
     <main className="items-center justify-center flex flex-col h-screen w-full">
         <div style={{width: `${widthVideo}%`}}  className="transition-all duration-100 ease-linear relative z-10 bg-[#202020] rounded-xl flex items-center justify-center">
             <div id="player" onClick={handlePause} className={`transition-all duration-100 ease-linear relative z-10 bg-[#202020] rounded-xl h-fit flex items-center justify-center`}>
+              <PlayPause play={playedVideo}/>
               <video
                 src="/videos/video.mp4"
                 className={`h-auto w-full object-cover ${widthVideo === 50 ? 'rounded-xl':''}`}
