@@ -2,23 +2,77 @@
 import ProgressBar from "./components/progressBar";
 import PlayPause from "@/app/components/playPause"
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [progressVideo, setProgress] = useState<number>(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [widthVideo, setWidthVideo] = useState(50)
-  const [playedVideo, setPlayedVideo] = useState(false)
+  const [playedVideo, setPlayedVideo] = useState(true)
+  const [stream, setStream] = useState<MediaStream | null>(null)
+  const [permissionGranted, setPermissionGranted] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recorderChunksRef = useRef<Blob[]>([])
+  const [isRecording, setIsRecording] = useState(false)
+  const [videoURL, setVideoURL] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getCameraFeed() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        })
+        setStream(stream)
+        setPermissionGranted(true)
+        mediaRecorderRef.current = new MediaRecorder(stream, {
+          mimeType: "video/webm; codecs=vp8"
+        })
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recorderChunksRef.current.push(event.data)
+          }
+        }
+      } catch (error) {
+        console.log(error)
+        setPermissionGranted(false)
+      }
+    }
+
+    const startRecording = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "inactive") {
+        recorderChunksRef.current = []
+        mediaRecorderRef.current.start()
+        setIsRecording(true)
+        setVideoURL(null)
+      }
+    }
+
+    getCameraFeed()
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop())
+        setStream(null)
+        setPermissionGranted(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream
+    }
+  }, [stream])
 
   const handlePause = () => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
       video.play();
-      setPlayedVideo(true)
+      setPlayedVideo(false)
     } else {
       video.pause();
-      setPlayedVideo(false)
+      setPlayedVideo(true)
     }
   };
 
@@ -43,8 +97,9 @@ export default function Home() {
 
   const handleToggleWidth = () => {
     setWidthVideo((width) => width === 50 ? 95 : 50);
-    console.log(widthVideo)
   }
+
+
 
   return (
     <main className="items-center justify-center flex flex-col h-screen w-full">
@@ -52,11 +107,12 @@ export default function Home() {
             <div id="player" onClick={handlePause} className={`transition-all duration-100 ease-linear relative z-10 bg-[#202020] rounded-xl h-fit flex items-center justify-center`}>
               <PlayPause play={playedVideo}/>
               <video
-                src="/videos/video.mp4"
+                autoPlay
+                playsInline
+                style={{display: permissionGranted ? "block":"none"}}
                 className={`h-auto w-full object-cover ${widthVideo === 50 ? 'rounded-xl':''}`}
                 ref={videoRef}
                 onTimeUpdate={handleProgressTime}
-                autoPlay
               />
             </div>
 
@@ -74,6 +130,15 @@ export default function Home() {
               <ProgressBar newPosition={newProgress} duration={durationVideo() ?? 0} progress={progressVideo}/>
             </div>
         </div>
+      {!permissionGranted && (
+       <div
+         style={{maxWidth: "600px",width: "100%",backgroundColor: "black",
+           color: "white",padding: "10px",textAlign: "center",height: "450px",
+           display: "flex",alignItems: "center",justifyContent: "center"}}
+       >
+         <p>Erro ao carregar o vídeo</p>
+       </div>
+      )}
     </main>
   );
 }
