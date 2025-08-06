@@ -48,13 +48,13 @@ export default function ProgressBar({progress, duration, newPosition}: props){
     const calcTimeFormated = (time:number) => {
         const hour = Math.floor(time / 3600)
         const minutes = Math.floor((time % 3600) / 60)
-        const seconds = time % 60
+        const seconds = Math.floor(time % 60)
 
         const hourFormated = String(hour).padStart(2, '0')
         const minutesFormated = String(minutes).padStart(2, '0')
         const secondsFormated = String(seconds).padStart(2, '0')
 
-        return `${hour ? hourFormated + ':' : ''}${minutesFormated}:${secondsFormated}`
+        return `${hour !== 0 ? hourFormated + ':' : ''}${minutesFormated}:${secondsFormated}`
     }
 
     useEffect(() => {
@@ -86,7 +86,7 @@ export default function ProgressBar({progress, duration, newPosition}: props){
             <div
              id="point-bar"
              ref={drgaRef}
-             style={{left: `${progress}%`, userSelect: 'none', position: 'absolute', transform: isDragging ? `translateX(${position.x}px)` : 'none'}}
+             style={{left: `calc(${progress}% - 7px)`, userSelect: 'none', position: 'absolute', transform: isDragging ? `translateX(${position.x}px)` : 'none'}}
              className={`z-20 transition-all duration-100 ease-linear rounded-full w-[14px] h-[14px] bg-[#00c3ff]`}></div>
         </div>
         <p className="mt-3 text-[14px] font-bold">{progressFormated} / {durationFormated}</p>
